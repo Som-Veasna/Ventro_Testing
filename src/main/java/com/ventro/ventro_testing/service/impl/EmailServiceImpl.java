@@ -88,7 +88,7 @@ public class EmailServiceImpl implements EmailService {
     }
     @Override
     public void sendCredentials(String toEmail, String password) {
-        sendAccountPassword(toEmail, password);  // ← just reuse sendAccountPassword
+        sendAccountPassword(toEmail, password);
     }
 
 }

@@ -28,46 +28,59 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     public UserResponse createStaff(CreateStaffRequest request) {
-        // check email exists
         if (userRepository.existsByEmail(request.getEmail()) > 0)
             throw new RuntimeException("Email already exists");
 
-        User currentUser = SecurityUtils.getCurrentUser();
-        String currentRole = currentUser.getRole().getRoleName();
-        if (currentRole.equals("MANAGER") && !request.getRoleName().equals("STAFF"))
-            throw new RuntimeException("Manager can only create STAFF");
+        String currentRole = SecurityUtils.getCurrentUser().getRole().getRoleName();
+        String targetRole  = request.getRoleName();
 
-        if (currentRole.equals("ADMIN") &&
-                !request.getRoleName().equals("MANAGER") &&
-                !request.getRoleName().equals("STAFF"))
-            throw new RuntimeException("Admin can only create MANAGER or STAFF");
+        if (currentRole.equals("STAFF"))
+            throw new RuntimeException("Staff does not have permission to create accounts");
 
-        Role role = userRepository.findRoleByName(request.getRoleName());
-        if (role == null)
-            throw new RuntimeException("Role not found: " + request.getRoleName());
+        if (currentRole.equals("MANAGER") && !targetRole.equals("STAFF"))
+            throw new RuntimeException("Manager can only create STAFF accounts");
 
-        String rawPassword = generateRandomPassword();
+        if (currentRole.equals("ADMIN") && !targetRole.equals("MANAGER") && !targetRole.equals("STAFF"))
+            throw new RuntimeException("Admin can only create MANAGER or STAFF accounts");
 
-        User user = staffRepository.saveStaff(
+        Role role = userRepository.findRoleByName(targetRole);
+        if (role == null) throw new RuntimeException("Role not found: " + targetRole);
+
+        String rawPassword;
+        boolean sendEmail;
+
+        if (targetRole.equals("MANAGER")) {
+            rawPassword = generateRandomPassword();
+            sendEmail   = true;
+        } else {
+            if (request.getPassword() == null || request.getPassword().isBlank())
+                throw new RuntimeException("Password is required when creating STAFF");
+            rawPassword = request.getPassword();
+            sendEmail   = false;
+        }
+
+        UUID userId = UUID.randomUUID();
+
+        staffRepository.insertStaff(
                 User.builder()
-                        .userId(UUID.randomUUID())
+                        .userId(userId)
                         .firstName(request.getFirstName())
                         .lastName(request.getLastName())
                         .email(request.getEmail())
                         .password(passwordEncoder.encode(rawPassword))
                         .phoneNumber(request.getPhoneNumber())
-                        .address(request.getAddress())
-                        .gender(request.getGender())
                         .branchId(request.getBranchId())
-                        .dateOfBirth(request.getDateOfBirth())
-                        .isFirstLogin(true)
+                        .requiresPasswordChange(true)
                         .isActive(true)
                         .role(role)
                         .build()
         );
 
-        emailService.sendAccountPassword(user.getEmail(), rawPassword);
-        return toUserResponse(user);
+        User saved = staffRepository.findById(userId);
+
+        if (sendEmail) emailService.sendAccountPassword(saved.getEmail(), rawPassword);
+
+        return toUserResponse(saved);
     }
 
     @Override
@@ -112,11 +125,8 @@ public class StaffServiceImpl implements StaffService {
                 .email(user.getEmail())
                 .image(user.getImage())
                 .phoneNumber(user.getPhoneNumber())
-                .address(user.getAddress())
-                .gender(user.getGender())
                 .branchId(user.getBranchId())
-                .dateOfBirth(user.getDateOfBirth())
-                .isFirstLogin(user.getIsFirstLogin())
+                .requiresPasswordChange(user.getRequiresPasswordChange())
                 .isActive(user.getIsActive())
                 .role(user.getRole().getRoleName())
                 .createdAt(user.getCreatedAt())

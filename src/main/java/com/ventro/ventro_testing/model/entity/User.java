@@ -22,13 +22,10 @@ public class User implements UserDetails {
     private String image;
     private String email;
     private String password;
-    private Boolean isFirstLogin;
+    private Boolean requiresPasswordChange;
     private String phoneNumber;
     private Boolean isActive;
-    private String address;
-    private String gender;
-    private LocalDate dateOfBirth;
-    private UUID branchId;        // ← add this
+    private UUID branchId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Role role;

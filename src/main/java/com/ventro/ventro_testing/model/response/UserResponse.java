@@ -17,12 +17,9 @@ public class UserResponse {
     private String email;
     private String image;
     private String phoneNumber;
-    private Boolean isFirstLogin;
+    private UUID branchId;
+    private Boolean requiresPasswordChange;
     private Boolean isActive;
     private String role;
     private LocalDateTime createdAt;
-    private String address;
-    private String gender;
-    private UUID branchId;
-    private LocalDate dateOfBirth;
 }

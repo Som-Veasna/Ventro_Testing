@@ -12,9 +12,8 @@ public class CreateStaffRequest {
     private String lastName;
     private String email;
     private String phoneNumber;
-    private String address;
-    private String gender;
     private LocalDate dateOfBirth;
     private String roleName;
     private UUID branchId;
+    private String password;
 }

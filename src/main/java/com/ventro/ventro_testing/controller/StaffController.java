@@ -21,10 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class StaffController {
-
     private final StaffService staffService;
-
-    // ADMIN and MANAGER can create — but MANAGER can only create STAFF
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<UserResponse>> createStaff(

@@ -8,7 +8,6 @@ import com.ventro.ventro_testing.model.response.LoginResponse;
 import com.ventro.ventro_testing.model.response.UserResponse;
 import com.ventro.ventro_testing.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +26,14 @@ public class AuthController {
     @Operation(security = { })
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @RequestBody LoginRequest request) {
+
+        LoginResponse loginResponse = authService.login(request);
+
         return ResponseEntity.ok(ApiResponse.<LoginResponse>builder()
                 .success(true)
                 .status(HttpStatus.OK)
-                .message("Login processed")
-                .data(authService.login(request))
+                .message(loginResponse.getMessage())
+                .data(loginResponse)
                 .timestamp(Instant.now())
                 .build());
     }

@@ -8,4 +8,7 @@ public interface AuthService {
     void sendResetOtp(String email);
     void resetPassword(ResetPasswordRequest request);
 
+    void forgotPassword(String email);
+
+    void resetForgotPassword(ResetPasswordRequest request);
 }

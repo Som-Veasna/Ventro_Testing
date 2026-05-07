@@ -5,7 +5,6 @@ import com.ventro.ventro_testing.model.entity.User;
 import com.ventro.ventro_testing.model.request.LoginRequest;
 import com.ventro.ventro_testing.model.request.ResetPasswordRequest;
 import com.ventro.ventro_testing.model.response.LoginResponse;
-import com.ventro.ventro_testing.model.response.UserResponse;
 import com.ventro.ventro_testing.repository.UserRepository;
 import com.ventro.ventro_testing.service.AuthService;
 import com.ventro.ventro_testing.service.EmailService;
@@ -18,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Random;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +29,8 @@ public class AuthServiceImpl implements AuthService {
     private final RedisService redisService;
     private final PasswordEncoder passwordEncoder;
 
-    private static final String OTP_PREFIX = "reset-otp:";
+    private static final String OTP_PREFIX        = "reset-otp:";
+    private static final String FORGOT_OTP_PREFIX = "forgot-otp:";
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -41,8 +40,6 @@ public class AuthServiceImpl implements AuthService {
 
         User user = (User) authentication.getPrincipal();
         String role = user.getRole().getRoleName();
-
-        // STAFF — return token directly
         if (role.equals("STAFF")) {
             return LoginResponse.builder()
                     .userId(user.getUserId())
@@ -50,14 +47,12 @@ public class AuthServiceImpl implements AuthService {
                     .firstName(user.getFirstName())
                     .lastName(user.getLastName())
                     .role(role)
-                    .isFirstLogin(user.getIsFirstLogin())
+                    .requiresPasswordChange(false)
                     .token(jwtService.generateToken(user))
                     .message("Login successful")
                     .build();
         }
-
-        // ADMIN or MANAGER — first login, send OTP
-        if (Boolean.TRUE.equals(user.getIsFirstLogin())) {
+        if (Boolean.TRUE.equals(user.getRequiresPasswordChange())) {
             sendResetOtp(user.getEmail());
             return LoginResponse.builder()
                     .userId(user.getUserId())
@@ -65,20 +60,18 @@ public class AuthServiceImpl implements AuthService {
                     .firstName(user.getFirstName())
                     .lastName(user.getLastName())
                     .role(role)
-                    .isFirstLogin(true)
+                    .requiresPasswordChange(true)
                     .token(null)
                     .message("First login detected. OTP sent to your email. Please reset your password.")
                     .build();
         }
-
-        // ADMIN or MANAGER — not first login, return token
         return LoginResponse.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .role(role)
-                .isFirstLogin(false)
+                .requiresPasswordChange(false)
                 .token(jwtService.generateToken(user))
                 .message("Login successful")
                 .build();
@@ -101,30 +94,29 @@ public class AuthServiceImpl implements AuthService {
                 request.getEmail(),
                 passwordEncoder.encode(request.getNewPassword())
         );
-
         redisService.delete(OTP_PREFIX + request.getEmail());
     }
 
-    private String generateRandomPassword() {
-        return UUID.randomUUID().toString().substring(0, 8);
+    @Override
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new RuntimeException("Email not found");
+
+        String otpCode = String.format("%06d", new Random().nextInt(999999));
+        redisService.save(FORGOT_OTP_PREFIX + email, otpCode, 5);
+        emailService.sendOtp(email, otpCode);
     }
 
-    private UserResponse toUserResponse(User user) {
-        return UserResponse.builder()
-                .userId(user.getUserId())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .email(user.getEmail())
-                .image(user.getImage())
-                .phoneNumber(user.getPhoneNumber())
-                .address(user.getAddress())
-                .gender(user.getGender())
-                .branchId(user.getBranchId())
-                .dateOfBirth(user.getDateOfBirth())
-                .isFirstLogin(user.getIsFirstLogin())
-                .isActive(user.getIsActive())
-                .role(user.getRole().getRoleName())
-                .createdAt(user.getCreatedAt())
-                .build();
+    @Override
+    public void resetForgotPassword(ResetPasswordRequest request) {
+        Object storedOtp = redisService.get(FORGOT_OTP_PREFIX + request.getEmail());
+        if (storedOtp == null || !storedOtp.toString().equals(request.getOtp()))
+            throw new RuntimeException("Invalid or expired OTP");
+
+        userRepository.resetPassword(
+                request.getEmail(),
+                passwordEncoder.encode(request.getNewPassword())
+        );
+        redisService.delete(FORGOT_OTP_PREFIX + request.getEmail());
     }
 }

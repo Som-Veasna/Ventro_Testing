@@ -15,7 +15,7 @@ public class LoginResponse {
     private String firstName;
     private String lastName;
     private String role;
-    private Boolean isFirstLogin;
+    private Boolean requiresPasswordChange;
     private String token;
     private String message;
 }
