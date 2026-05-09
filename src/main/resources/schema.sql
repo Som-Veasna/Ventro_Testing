@@ -12,7 +12,6 @@ CREATE TABLE roles (
                        role_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                        role_name VARCHAR(15) NOT NULL UNIQUE
 );
-
 CREATE TABLE branches (
                           branch_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                           branch_name VARCHAR(50) NOT NULL,

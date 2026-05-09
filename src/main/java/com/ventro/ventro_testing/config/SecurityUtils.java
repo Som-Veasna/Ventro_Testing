@@ -11,7 +11,6 @@ public class SecurityUtils {
                 .getAuthentication()
                 .getPrincipal();
     }
-
     public static UUID getCurrentUserId() {
         return getCurrentUser().getUserId();
     }

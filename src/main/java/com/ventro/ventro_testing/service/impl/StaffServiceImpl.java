@@ -58,9 +58,7 @@ public class StaffServiceImpl implements StaffService {
             rawPassword = request.getPassword();
             sendEmail   = false;
         }
-
         UUID userId = UUID.randomUUID();
-
         staffRepository.insertStaff(
                 User.builder()
                         .userId(userId)
@@ -125,7 +123,6 @@ public class StaffServiceImpl implements StaffService {
                 .email(user.getEmail())
                 .image(user.getImage())
                 .phoneNumber(user.getPhoneNumber())
-                .branchId(user.getBranchId())
                 .requiresPasswordChange(user.getRequiresPasswordChange())
                 .isActive(user.getIsActive())
                 .role(user.getRole().getRoleName())

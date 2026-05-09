@@ -1,13 +1,17 @@
 package com.ventro.ventro_testing.controller;
 
 
+import com.ventro.ventro_testing.config.SecurityUtils;
+import com.ventro.ventro_testing.model.entity.User;
 import com.ventro.ventro_testing.model.request.LoginRequest;
 import com.ventro.ventro_testing.model.request.ResetPasswordRequest;
 import com.ventro.ventro_testing.model.response.ApiResponse;
 import com.ventro.ventro_testing.model.response.LoginResponse;
 import com.ventro.ventro_testing.model.response.UserResponse;
+import com.ventro.ventro_testing.repository.UserRepository;
 import com.ventro.ventro_testing.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +23,7 @@ import java.time.Instant;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
+    private final UserRepository userRepository;
     private final AuthService authService;
 
     @PostMapping("/login")
@@ -63,7 +67,32 @@ public class AuthController {
                 .timestamp(Instant.now())
                 .build());
     }
+    @GetMapping("/me")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser() {
+        String email = SecurityUtils.getCurrentUser().getUsername();
+        User user = userRepository.findByEmail(email);
 
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .success(true)
+                .status(HttpStatus.OK)
+                .message("Profile retrieved successfully")
+                .data(UserResponse.builder()
+                        .userId(user.getUserId())
+                        .firstName(user.getFirstName())
+                        .lastName(user.getLastName())
+                        .email(user.getEmail())
+                        .image(user.getImage())
+                        .phoneNumber(user.getPhoneNumber())
+                        .branchId(user.getBranchId())
+                        .requiresPasswordChange(user.getRequiresPasswordChange())
+                        .isActive(user.getIsActive())
+                        .role(user.getRole().getRoleName())
+                        .createdAt(user.getCreatedAt())
+                        .build())
+                .timestamp(Instant.now())
+                .build());
+    }
 
 
 }

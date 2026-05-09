@@ -36,6 +36,7 @@ public interface UserRepository {
             @Result(property = "requiresPasswordChange",  column = "requires_password_change"),
             @Result(property = "phoneNumber",             column = "phone_number"),
             @Result(property = "isActive",                column = "is_active"),
+            @Result(property = "branchId",               column = "branch_id",      typeHandler = UUIDTypeHandler.class),
             @Result(property = "createdAt",               column = "created_at"),
             @Result(property = "updatedAt",               column = "updated_at"),
             @Result(property = "role.roleId",             column = "role_id",              typeHandler = UUIDTypeHandler.class),
